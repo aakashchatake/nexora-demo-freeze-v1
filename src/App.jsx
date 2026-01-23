@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import PlatformGateway from './pages/PlatformGateway';
 import DesignSystemDemo from './pages/DesignSystemDemo';
 import InteractiveDashboard from './pages/InteractiveDashboard';

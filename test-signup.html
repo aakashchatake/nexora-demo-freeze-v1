@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Signup</title>
+</head>
+<body>
+    <h2>Quick Signup Test</h2>
+    <form id="testForm">
+        <input type="email" id="email" placeholder="Email" required><br><br>
+        <input type="password" id="password" placeholder="Password (min 6 chars)" required minlength="6"><br><br>
+        <button type="submit">Test Signup</button>
+    </form>
+    <div id="result" style="margin-top: 20px;"></div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        const supabase = createClient(
+            'https://fdwsoeupbgmousororov.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkd3NvZXVwYmdtb3Vzb3Jvcm92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzODI4NTAsImV4cCI6MjA4NTk1ODg1MH0.Gebn73xBJYSSWbuKUqUKjU2bMcRQDYt0Q38Rpz6iLak'
+        );
+
+        document.getElementById('testForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.innerHTML = '<p>Testing signup...</p>';
+            
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            institution_name: 'Test Institute',
+                            full_name: 'Test User',
+                            institute_id: 'test-001'
+                        }
+                    }
+                });
+
+                if (error) {
+                    resultDiv.innerHTML = `<p style="color: red;">❌ Error: ${error.message}</p>`;
+                } else {
+                    resultDiv.innerHTML = `<p style="color: green;">✅ Success! User created: ${data.user?.email}</p>
+                    <p>Check your email for verification link</p>`;
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<p style="color: red;">❌ Exception: ${err.message}</p>`;
+            }
+        };
+    </script>
+</body>
+</html>

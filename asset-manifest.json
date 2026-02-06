@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/nexora-demo-freeze-v1/static/css/main.913e7f08.css",
-    "main.js": "/nexora-demo-freeze-v1/static/js/main.5c93ffd6.js",
+    "main.js": "/nexora-demo-freeze-v1/static/js/main.9ebc0b0b.js",
     "static/js/453.1055f8d7.chunk.js": "/nexora-demo-freeze-v1/static/js/453.1055f8d7.chunk.js",
     "index.html": "/nexora-demo-freeze-v1/index.html",
     "main.913e7f08.css.map": "/nexora-demo-freeze-v1/static/css/main.913e7f08.css.map",
-    "main.5c93ffd6.js.map": "/nexora-demo-freeze-v1/static/js/main.5c93ffd6.js.map",
+    "main.9ebc0b0b.js.map": "/nexora-demo-freeze-v1/static/js/main.9ebc0b0b.js.map",
     "453.1055f8d7.chunk.js.map": "/nexora-demo-freeze-v1/static/js/453.1055f8d7.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.913e7f08.css",
-    "static/js/main.5c93ffd6.js"
+    "static/js/main.9ebc0b0b.js"
   ]
 }

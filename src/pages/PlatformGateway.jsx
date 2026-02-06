@@ -4,32 +4,57 @@ import { supabase } from '../lib/supabaseClient';
 
 export default function PlatformGateway() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
+  const [showSignup, setShowSignup] = useState(false);
+  
+  // Login state
+  const [loginData, setLoginData] = useState({
     email: '',
     password: '',
   });
 
+  // Signup state
+  const [signupData, setSignupData] = useState({
+    instituteId: '',
+    institutionName: '',
+    institutionType: 'college',
+    email: '',
+    phone: '',
+    fullName: '',
+    password: '',
+    passwordConfirm: '',
+  });
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  const handleChange = (e) => {
+  const handleLoginChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setLoginData(prev => ({
       ...prev,
       [name]: value,
     }));
     setError('');
   };
 
-  const handleSubmit = async (e) => {
+  const handleSignupChange = (e) => {
+    const { name, value } = e.target;
+    setSignupData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+    setError('');
+  };
+
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     try {
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
+        email: loginData.email,
+        password: loginData.password,
       });
 
       if (loginError) {
@@ -49,6 +74,77 @@ export default function PlatformGateway() {
     } catch (err) {
       setError(err.message || 'An error occurred during login');
       console.error('Login error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignupSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      // Validation
+      if (!signupData.instituteId || !signupData.fullName || !signupData.institutionName) {
+        throw new Error('Please fill in all required fields');
+      }
+
+      if (!signupData.email || !signupData.email.includes('@')) {
+        throw new Error('Please enter a valid email address');
+      }
+
+      if (signupData.password.length < 6) {
+        throw new Error('Password must be at least 6 characters');
+      }
+
+      if (signupData.password !== signupData.passwordConfirm) {
+        throw new Error('Passwords do not match');
+      }
+
+      // Create Supabase user
+      const { error: signupError } = await supabase.auth.signUp({
+        email: signupData.email,
+        password: signupData.password,
+        options: {
+          data: {
+            full_name: signupData.fullName,
+            institution_name: signupData.institutionName,
+            institute_id: signupData.instituteId,
+            institution_type: signupData.institutionType,
+            phone: signupData.phone,
+          }
+        }
+      });
+
+      if (signupError) {
+        throw new Error(signupError.message || 'Signup failed');
+      }
+
+      setSuccessMessage('Account created! Check your email to verify, then you can login.');
+      
+      // Reset signup form
+      setSignupData({
+        instituteId: '',
+        institutionName: '',
+        institutionType: 'college',
+        email: '',
+        phone: '',
+        fullName: '',
+        password: '',
+        passwordConfirm: '',
+      });
+
+      // Switch back to login after 3 seconds
+      setTimeout(() => {
+        setShowSignup(false);
+        setSuccessMessage('');
+      }, 3000);
+
+    } catch (err) {
+      setError(err.message || 'An error occurred during signup');
+      console.error('Signup error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -110,162 +206,492 @@ export default function PlatformGateway() {
           </div>
         )}
 
-        {/* Login Card */}
-        <div className="card" style={{
-          padding: 'var(--spacing-lg)',
-          marginBottom: 'var(--spacing-lg)',
-        }}>
-          <h2 style={{
-            marginTop: 0,
-            marginBottom: 'var(--spacing-sm)',
-            color: 'var(--nexora-primary-blue)',
-            fontSize: '1.5rem',
-          }}>
-            Sign in to your Nexora Platform
-          </h2>
-          
-          <p style={{
-            color: 'var(--nexora-text-secondary)',
-            fontSize: '0.95rem',
-            marginBottom: 'var(--spacing-lg)',
-            margin: '0 0 var(--spacing-lg) 0',
-          }}>
-            For universities, colleges, and institutions
-          </p>
-
-          <form onSubmit={handleSubmit}>
-            {/* Email Field */}
-            <div style={{ marginBottom: 'var(--spacing-md)' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: 'var(--spacing-xs)',
-                color: 'var(--nexora-text-primary)',
-                fontWeight: 'var(--font-weight-semibold)',
-                fontSize: '0.9rem',
-              }}>
-                Email Address
-              </label>
-              <input
-                type="email"
-                name="email"
-                placeholder="admin@institution.edu"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                style={{
-                  width: '100%',
-                  padding: 'var(--spacing-md)',
-                  border: `1px solid var(--nexora-border)`,
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: '1rem',
-                  fontFamily: 'inherit',
-                  backgroundColor: 'var(--nexora-surface)',
-                  color: 'var(--nexora-text-primary)',
-                  boxSizing: 'border-box',
-                  transition: 'border-color 0.2s, box-shadow 0.2s',
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = 'var(--nexora-primary-blue)';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(30, 58, 138, 0.1)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = 'var(--nexora-border)';
-                  e.target.style.boxShadow = 'none';
-                }}
-              />
-            </div>
-
-            {/* Password Field */}
-            <div style={{ marginBottom: 'var(--spacing-lg)' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: 'var(--spacing-xs)',
-                color: 'var(--nexora-text-primary)',
-                fontWeight: 'var(--font-weight-semibold)',
-                fontSize: '0.9rem',
-              }}>
-                Password
-              </label>
-              <input
-                type="password"
-                name="password"
-                placeholder="Enter your password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                style={{
-                  width: '100%',
-                  padding: 'var(--spacing-md)',
-                  border: `1px solid var(--nexora-border)`,
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: '1rem',
-                  fontFamily: 'inherit',
-                  backgroundColor: 'var(--nexora-surface)',
-                  color: 'var(--nexora-text-primary)',
-                  boxSizing: 'border-box',
-                  transition: 'border-color 0.2s, box-shadow 0.2s',
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = 'var(--nexora-primary-blue)';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(30, 58, 138, 0.1)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = 'var(--nexora-border)';
-                  e.target.style.boxShadow = 'none';
-                }}
-              />
-            </div>
-
-            {/* Primary Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="btn-primary"
-              style={{
-                width: '100%',
-                padding: 'var(--spacing-md)',
-                fontSize: '1rem',
-                fontWeight: 'var(--font-weight-semibold)',
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                opacity: isLoading ? 0.7 : 1,
-              }}
-            >
-              {isLoading ? 'Authenticating...' : 'Sign In'}
-            </button>
-          </form>
-        </div>
-
-        {/* Sign Up Link */}
-        <div style={{ textAlign: 'center', marginBottom: 'var(--spacing-lg)' }}>
-          <p style={{
-            color: 'var(--nexora-text-secondary)',
+        {/* Success Message */}
+        {successMessage && (
+          <div style={{
+            backgroundColor: '#efe',
+            border: '1px solid #cfc',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--spacing-md)',
+            marginBottom: 'var(--spacing-md)',
+            color: '#3c3',
             fontSize: '0.9rem',
-            margin: 0,
-            marginBottom: 'var(--spacing-sm)'
+            textAlign: 'center'
           }}>
-            Don't have an account?
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate('/signup')}
-            style={{
-              background: 'none',
-              border: 'none',
+            {successMessage}
+          </div>
+        )}
+
+        {/* Login Form */}
+        {!showSignup && (
+          <div className="card" style={{
+            padding: 'var(--spacing-lg)',
+            marginBottom: 'var(--spacing-lg)',
+          }}>
+            <h2 style={{
+              marginTop: 0,
+              marginBottom: 'var(--spacing-sm)',
               color: 'var(--nexora-primary-blue)',
-              textDecoration: 'none',
+              fontSize: '1.5rem',
+            }}>
+              Sign in to your Nexora Platform
+            </h2>
+            
+            <p style={{
+              color: 'var(--nexora-text-secondary)',
               fontSize: '0.95rem',
-              cursor: 'pointer',
-              fontWeight: 'var(--font-weight-semibold)',
-              fontFamily: 'inherit',
-              padding: 0,
-              transition: 'opacity 0.2s'
-            }}
-            onMouseEnter={(e) => e.target.style.opacity = '0.7'}
-            onMouseLeave={(e) => e.target.style.opacity = '1'}
-          >
-            Create Institution Account
-          </button>
-        </div>
+              marginBottom: 'var(--spacing-lg)',
+              margin: '0 0 var(--spacing-lg) 0',
+            }}>
+              For universities, colleges, and institutions
+            </p>
+
+            <form onSubmit={handleLoginSubmit}>
+              <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: 'var(--spacing-xs)',
+                  color: 'var(--nexora-text-primary)',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  fontSize: '0.9rem',
+                }}>
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="admin@institution.edu"
+                  value={loginData.email}
+                  onChange={handleLoginChange}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: 'var(--spacing-md)',
+                    border: `1px solid var(--nexora-border)`,
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '1rem',
+                    fontFamily: 'inherit',
+                    backgroundColor: 'var(--nexora-surface)',
+                    color: 'var(--nexora-text-primary)',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 'var(--spacing-lg)' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: 'var(--spacing-xs)',
+                  color: 'var(--nexora-text-primary)',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  fontSize: '0.9rem',
+                }}>
+                  Password
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="Enter your password"
+                  value={loginData.password}
+                  onChange={handleLoginChange}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: 'var(--spacing-md)',
+                    border: `1px solid var(--nexora-border)`,
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '1rem',
+                    fontFamily: 'inherit',
+                    backgroundColor: 'var(--nexora-surface)',
+                    color: 'var(--nexora-text-primary)',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="btn-primary"
+                style={{
+                  width: '100%',
+                  padding: 'var(--spacing-md)',
+                  fontSize: '1rem',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  opacity: isLoading ? 0.7 : 1,
+                }}
+              >
+                {isLoading ? 'Authenticating...' : 'Sign In'}
+              </button>
+            </form>
+
+            {/* Signup Link - Click opens form below */}
+            <div style={{ textAlign: 'center', marginTop: 'var(--spacing-lg)' }}>
+              <p style={{
+                color: 'var(--nexora-text-secondary)',
+                fontSize: '0.9rem',
+                margin: 0,
+                marginBottom: 'var(--spacing-sm)'
+              }}>
+                Don't have an account?
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSignup(true);
+                  setError('');
+                  setSuccessMessage('');
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--nexora-primary-blue)',
+                  textDecoration: 'none',
+                  fontSize: '0.95rem',
+                  cursor: 'pointer',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  fontFamily: 'inherit',
+                  padding: 0,
+                  transition: 'opacity 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.opacity = '0.7'}
+                onMouseLeave={(e) => e.target.style.opacity = '1'}
+              >
+                Create Institution Account
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Signup Form - Shows when button clicked */}
+        {showSignup && (
+          <div className="card" style={{
+            padding: 'var(--spacing-lg)',
+            marginBottom: 'var(--spacing-lg)',
+          }}>
+            <h2 style={{
+              marginTop: 0,
+              marginBottom: 'var(--spacing-sm)',
+              color: 'var(--nexora-primary-blue)',
+              fontSize: '1.3rem',
+            }}>
+              Create Institution Account
+            </h2>
+            
+            <p style={{
+              color: 'var(--nexora-text-secondary)',
+              fontSize: '0.9rem',
+              marginBottom: 'var(--spacing-lg)',
+              margin: '0 0 var(--spacing-lg) 0',
+            }}>
+              Register your institution with Nexora
+            </p>
+
+            <form onSubmit={handleSignupSubmit}>
+              <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: 'var(--spacing-xs)',
+                  color: 'var(--nexora-text-primary)',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  fontSize: '0.9rem',
+                }}>
+                  Institute ID *
+                </label>
+                <input
+                  type="text"
+                  name="instituteId"
+                  placeholder="INST-001"
+                  value={signupData.instituteId}
+                  onChange={handleSignupChange}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: 'var(--spacing-md)',
+                    border: `1px solid var(--nexora-border)`,
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.95rem',
+                    fontFamily: 'inherit',
+                    backgroundColor: 'var(--nexora-surface)',
+                    color: 'var(--nexora-text-primary)',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: 'var(--spacing-xs)',
+                  color: 'var(--nexora-text-primary)',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  fontSize: '0.9rem',
+                }}>
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  name="fullName"
+                  placeholder="John Doe"
+                  value={signupData.fullName}
+                  onChange={handleSignupChange}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: 'var(--spacing-md)',
+                    border: `1px solid var(--nexora-border)`,
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.95rem',
+                    fontFamily: 'inherit',
+                    backgroundColor: 'var(--nexora-surface)',
+                    color: 'var(--nexora-text-primary)',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: 'var(--spacing-xs)',
+                  color: 'var(--nexora-text-primary)',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  fontSize: '0.9rem',
+                }}>
+                  Institution Name *
+                </label>
+                <input
+                  type="text"
+                  name="institutionName"
+                  placeholder="Solapur Institute of Technology"
+                  value={signupData.institutionName}
+                  onChange={handleSignupChange}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: 'var(--spacing-md)',
+                    border: `1px solid var(--nexora-border)`,
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.95rem',
+                    fontFamily: 'inherit',
+                    backgroundColor: 'var(--nexora-surface)',
+                    color: 'var(--nexora-text-primary)',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: 'var(--spacing-xs)',
+                  color: 'var(--nexora-text-primary)',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  fontSize: '0.9rem',
+                }}>
+                  Institution Type
+                </label>
+                <select
+                  name="institutionType"
+                  value={signupData.institutionType}
+                  onChange={handleSignupChange}
+                  style={{
+                    width: '100%',
+                    padding: 'var(--spacing-md)',
+                    border: `1px solid var(--nexora-border)`,
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.95rem',
+                    fontFamily: 'inherit',
+                    backgroundColor: 'var(--nexora-surface)',
+                    color: 'var(--nexora-text-primary)',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <option value="college">College</option>
+                  <option value="university">University</option>
+                  <option value="school">School</option>
+                  <option value="institute">Institute</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: 'var(--spacing-xs)',
+                  color: 'var(--nexora-text-primary)',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  fontSize: '0.9rem',
+                }}>
+                  Email Address *
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="admin@institution.edu"
+                  value={signupData.email}
+                  onChange={handleSignupChange}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: 'var(--spacing-md)',
+                    border: `1px solid var(--nexora-border)`,
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.95rem',
+                    fontFamily: 'inherit',
+                    backgroundColor: 'var(--nexora-surface)',
+                    color: 'var(--nexora-text-primary)',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: 'var(--spacing-xs)',
+                  color: 'var(--nexora-text-primary)',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  fontSize: '0.9rem',
+                }}>
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="+91 XXXXX XXXXX"
+                  value={signupData.phone}
+                  onChange={handleSignupChange}
+                  style={{
+                    width: '100%',
+                    padding: 'var(--spacing-md)',
+                    border: `1px solid var(--nexora-border)`,
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.95rem',
+                    fontFamily: 'inherit',
+                    backgroundColor: 'var(--nexora-surface)',
+                    color: 'var(--nexora-text-primary)',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: 'var(--spacing-xs)',
+                  color: 'var(--nexora-text-primary)',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  fontSize: '0.9rem',
+                }}>
+                  Password (min 6 chars) *
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="Enter a secure password"
+                  value={signupData.password}
+                  onChange={handleSignupChange}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: 'var(--spacing-md)',
+                    border: `1px solid var(--nexora-border)`,
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.95rem',
+                    fontFamily: 'inherit',
+                    backgroundColor: 'var(--nexora-surface)',
+                    color: 'var(--nexora-text-primary)',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 'var(--spacing-lg)' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: 'var(--spacing-xs)',
+                  color: 'var(--nexora-text-primary)',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  fontSize: '0.9rem',
+                }}>
+                  Confirm Password *
+                </label>
+                <input
+                  type="password"
+                  name="passwordConfirm"
+                  placeholder="Confirm your password"
+                  value={signupData.passwordConfirm}
+                  onChange={handleSignupChange}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: 'var(--spacing-md)',
+                    border: `1px solid var(--nexora-border)`,
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.95rem',
+                    fontFamily: 'inherit',
+                    backgroundColor: 'var(--nexora-surface)',
+                    color: 'var(--nexora-text-primary)',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="btn-primary"
+                style={{
+                  width: '100%',
+                  padding: 'var(--spacing-md)',
+                  fontSize: '1rem',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  opacity: isLoading ? 0.7 : 1,
+                }}
+              >
+                {isLoading ? 'Creating Account...' : 'Create Account'}
+              </button>
+            </form>
+
+            {/* Back to login */}
+            <div style={{ textAlign: 'center', marginTop: 'var(--spacing-lg)' }}>
+              <p style={{
+                color: 'var(--nexora-text-secondary)',
+                fontSize: '0.9rem',
+                margin: 0,
+                marginBottom: 'var(--spacing-sm)'
+              }}>
+                Already have an account?
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSignup(false);
+                  setError('');
+                  setSuccessMessage('');
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--nexora-primary-blue)',
+                  textDecoration: 'none',
+                  fontSize: '0.95rem',
+                  cursor: 'pointer',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  fontFamily: 'inherit',
+                  padding: 0,
+                  transition: 'opacity 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.opacity = '0.7'}
+                onMouseLeave={(e) => e.target.style.opacity = '1'}
+              >
+                Sign In Instead
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <div style={{
